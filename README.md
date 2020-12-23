@@ -2,6 +2,8 @@
 
 Configurable system tray widget for a group of related services
 
+![screenshot](./servicetray.png)
+
 ## Installation
 
 servicetray is a go app. It's built with [https://github.com/getlantern/systray](systray) - see that repo for installation requirements
