@@ -58,11 +58,11 @@ type item struct {
 
 func (i *item) redraw() {
 	if i.running {
-		i.miStart.Hide()
-		i.miStop.Show()
+		i.miStart.Disable()
+		i.miStop.Enable()
 	} else {
-		i.miStart.Show()
-		i.miStop.Hide()
+		i.miStart.Enable()
+		i.miStop.Disable()
 	}
 	i.mi.SetTitle(title(i.Name, i.running))
 }
@@ -75,7 +75,7 @@ const (
 	actionStop        actiontype = 2
 )
 
-type action struct {
+type event struct {
 	item string
 	typ  actiontype // false is just to update status
 }
@@ -127,10 +127,13 @@ func applyTemplate(template *item, entry *item) {
 
 func onReady(c *config) func() {
 	return func() {
+		if c.Title == "" {
+			c.Title = "SVCs"
+		}
 		systray.SetTitle(c.Title)
 		systray.SetTooltip("Service tray")
 
-		agg := make(chan action)
+		events := make(chan event)
 
 		for _, v := range c.Items {
 			if v.Template != "" {
@@ -151,23 +154,40 @@ func onReady(c *config) func() {
 			}
 			v.running = v.Check.isOK()
 			v.mi = systray.AddMenuItem(title(v.Name, v.running), "tooltip")
-			v.miStart = v.mi.AddSubMenuItem("start", "start the ting")
-			v.miStop = v.mi.AddSubMenuItem("stop", "stop the ting")
+			v.miStart = v.mi.AddSubMenuItem("Start", "start the ting")
+			v.miStop = v.mi.AddSubMenuItem("Stop", "stop the ting")
 			// drain all click-channels into a single channel, 'agg'
 			go func(k string, mi *systray.MenuItem) {
 				// for _ = range mi.ClickedCh {
 				for _ = range mi.ClickedCh {
-					agg <- action{item: k, typ: actionStart}
+					events <- event{item: k, typ: actionStart}
 				}
 			}(v.Name, v.miStart)
 			go func(k string, mi *systray.MenuItem) {
 				// for _ = range mi.ClickedCh {
 				for _ = range mi.ClickedCh {
-					agg <- action{item: k, typ: actionStop}
+					events <- event{item: k, typ: actionStop}
 				}
 			}(v.Name, v.miStop)
 			v.redraw()
 		}
+		mStartAll := systray.AddMenuItem("Start All", "Start all")
+		go func() {
+			for _ = range mStartAll.ClickedCh {
+				for _, v := range c.Items {
+					events <- event{item: v.Name, typ: actionStart}
+				}
+			}
+		}()
+		mStopAll := systray.AddMenuItem("Stop All", "Stop all")
+		go func() {
+			for _ = range mStopAll.ClickedCh {
+				for _, v := range c.Items {
+					events <- event{item: v.Name, typ: actionStop}
+				}
+			}
+		}()
+		systray.AddSeparator()
 		mQuit := systray.AddMenuItem("Quit", "Quit the whole app")
 		go func() {
 			<-mQuit.ClickedCh
@@ -181,13 +201,13 @@ func onReady(c *config) func() {
 				// every 5 seconds, check status
 				time.Sleep(time.Second * 5)
 				for _, v := range c.Items {
-					agg <- action{item: v.Name, typ: actionCheckStatus}
+					events <- event{item: v.Name, typ: actionCheckStatus}
 				}
 			}
 		}()
 		for {
 			select {
-			case action := <-agg:
+			case action := <-events:
 				log.Debugf("received event: %+v", action)
 				runningCount := 0
 				for _, item := range c.Items {
@@ -219,6 +239,16 @@ func onReady(c *config) func() {
 					}
 				}
 				systray.SetTitle(title(c.Title, runningCount > 0) + fmt.Sprintf(" [%d/%d]", runningCount, len(c.Items)))
+				if runningCount < 1 {
+					mStopAll.Disable()
+				} else {
+					mStopAll.Enable()
+				}
+				if runningCount == len(c.Items) {
+					mStartAll.Disable()
+				} else {
+					mStartAll.Enable()
+				}
 			}
 		}
 	}
