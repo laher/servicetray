@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"text/template"
 	"time"
@@ -27,19 +30,77 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	process(t)
 	systray.Run(onReady(t), onExit)
 }
 
+func process(c *config) {
+	if c.Pwd != "" {
+		if err := os.Chdir(c.Pwd); err != nil {
+			log.Errorf("ERR: %s", err)
+			return
+		}
+	}
+	for _, g := range c.Generators {
+		cmds := g.Find.cmd()
+		bout := &bytes.Buffer{}
+		berr := &bytes.Buffer{}
+		if err := pipeline(bout, berr, cmds...); err != nil {
+			log.Errorf("could not generate: %+v", g.Find)
+			sc := bufio.NewScanner(berr)
+			for sc.Scan() {
+				log.Errorf("ERR: %s", sc.Text())
+			}
+			continue
+		}
+		sc := bufio.NewScanner(bout)
+		for sc.Scan() {
+			log.Infof("found: %s", sc.Text())
+			c.Items = append(c.Items, &item{
+				Name:     sc.Text(),
+				Template: g.Template,
+				Vars: map[string]interface{}{
+					"svc": sc.Text(),
+				},
+			})
+		}
+	}
+	for _, v := range c.Items {
+		if v.Template != "" {
+			found := false
+			for _, t := range c.Templates {
+				if v.Template == t.Name {
+					applyTemplate(t, v)
+					found = true
+				}
+			}
+			if !found {
+				log.Errorf("template not found: %s", v.Template)
+			}
+		}
+	}
+}
+
 type config struct {
-	Title     string
-	Icon      string
-	Items     []*item
-	Templates []*item
+	Title      string
+	Icon       string
+	Pwd        string
+	Items      []*item
+	Templates  []*item
+	Generators []*generator
+}
+
+type generator struct {
+	Name     string
+	Find     *command
+	Template string
+	Vars     map[string]interface{}
 }
 
 type command struct {
 	Cmd  string
 	Args []string
+	Pipe *command
 }
 
 type item struct {
@@ -81,16 +142,70 @@ type event struct {
 	typ  actiontype // false is just to update status
 }
 
+func pipeline(stdout io.Writer, stderr io.Writer, stack ...*exec.Cmd) error {
+	pipes := make([]*io.PipeWriter, len(stack)-1)
+	i := 0
+	for ; i < len(stack)-1; i++ {
+		inPipe, outPipe := io.Pipe()
+		stack[i].Stdout = outPipe
+		stack[i].Stderr = stderr
+		stack[i+1].Stdin = inPipe
+		pipes[i] = outPipe
+	}
+	stack[i].Stdout = stdout
+	stack[i].Stderr = stderr
+	return call(stack, pipes)
+}
+
+func call(stack []*exec.Cmd, pipes []*io.PipeWriter) error {
+	var err error
+	if stack[0].Process == nil {
+		if err = stack[0].Start(); err != nil {
+			return err
+		}
+	}
+	if len(stack) > 1 {
+		if err = stack[1].Start(); err != nil {
+			return err
+		}
+		defer func() {
+			if err == nil {
+				pipes[0].Close()
+				err = call(stack[1:], pipes[1:])
+			}
+		}()
+	}
+	return stack[0].Wait()
+}
+
 func (c *command) isOK() bool {
-	log.Debugf("running command: %s, args: %v", c.Cmd, c.Args)
+	cmds := c.cmd()
+	bout := &bytes.Buffer{}
+	berr := &bytes.Buffer{}
+	err := pipeline(bout, berr, cmds...)
+	if err != nil {
+		log.Debugf("isOK - error: %s", err.Error())
+		log.Debugf("isOK - stdout: %s", bout.String())
+		log.Debugf("isOK - stderr: %s", berr.String())
+	}
+	return err == nil
+}
+
+func (c *command) cmd() []*exec.Cmd {
+	log.Debugf("lookup command: %s, args: %v", c.Cmd, c.Args)
 	cmd := exec.Command(c.Cmd, c.Args...)
-	return cmd.Run() == nil
+	if c.Pipe != nil {
+		log.Debugf("pipe - cmd: %s, args: %v", c.Pipe.Cmd, c.Pipe.Args)
+		inner := c.Pipe.cmd()
+		return append([]*exec.Cmd{cmd}, inner...)
+	}
+	return []*exec.Cmd{cmd}
 }
 
 func (c *command) do() error {
-	log.Debugf("running command: %s, args: %v", c.Cmd, c.Args)
-	cmd := exec.Command(c.Cmd, c.Args...)
-	return cmd.Run()
+	log.Infof("running command: %s, args: %v", c.Cmd, c.Args)
+	cmds := c.cmd()
+	return pipeline(os.Stdout, os.Stderr, cmds...)
 }
 
 func applyTemplateToString(tpl string, vars map[string]interface{}) string {
@@ -113,9 +228,13 @@ func applyTemplateToSlice(in []string, vars map[string]interface{}) []string {
 }
 
 func applyTemplateToCommand(template *command, vars map[string]interface{}) *command {
+	if template == nil {
+		return nil
+	}
 	ret := &command{
 		Cmd:  applyTemplateToString(template.Cmd, vars),
 		Args: applyTemplateToSlice(template.Args, vars),
+		Pipe: applyTemplateToCommand(template.Pipe, vars),
 	}
 	return ret
 }
@@ -127,6 +246,7 @@ func applyTemplate(template *item, entry *item) {
 }
 
 func onReady(c *config) func() {
+
 	return func() {
 		if c.Title == "" {
 			c.Title = "SVCs"
@@ -144,21 +264,9 @@ func onReady(c *config) func() {
 		events := make(chan event)
 
 		for _, v := range c.Items {
-			if v.Template != "" {
-				found := false
-				for _, t := range c.Templates {
-					if v.Template == t.Name {
-						applyTemplate(t, v)
-						found = true
-					}
-				}
-				if !found {
-					log.Errorf("template not found: %s", v.Template)
-				}
-			}
+			// TODO allow items without checks. Just set result to "UNKNOWN"
 			if v.Check == nil {
 				log.Errorf("invalid item: %+v", v)
-
 			}
 			v.running = v.Check.isOK()
 			v.mi = systray.AddMenuItem(title(v.Name, v.running), "tooltip")
