@@ -32,6 +32,7 @@ func main() {
 
 type config struct {
 	Title     string
+	Icon      string
 	Items     []*item
 	Templates []*item
 }
@@ -129,6 +130,13 @@ func onReady(c *config) func() {
 	return func() {
 		if c.Title == "" {
 			c.Title = "SVCs"
+		}
+		if c.Icon != "" {
+			b, err := ioutil.ReadFile(c.Icon)
+			if err != nil {
+				panic(err)
+			}
+			systray.SetIcon(b)
 		}
 		systray.SetTitle(c.Title)
 		systray.SetTooltip("Service tray")

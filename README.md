@@ -37,6 +37,7 @@ This example uses a 'template' for managing multiple vpns, via systemctl ...
 
 ```
 title: VPNs
+icon: /usr/share/icons/gnome/16x16/emblems/emblem-system.png
 items:
    - name: wireguard-am
      template: systemctl
