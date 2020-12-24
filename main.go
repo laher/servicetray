@@ -275,13 +275,13 @@ func onReady(c *config) func() {
 			// drain all click-channels into a single channel, 'agg'
 			go func(k string, mi *systray.MenuItem) {
 				// for _ = range mi.ClickedCh {
-				for _ = range mi.ClickedCh {
+				for range mi.ClickedCh {
 					events <- event{item: k, typ: actionStart}
 				}
 			}(v.Name, v.miStart)
 			go func(k string, mi *systray.MenuItem) {
 				// for _ = range mi.ClickedCh {
-				for _ = range mi.ClickedCh {
+				for range mi.ClickedCh {
 					events <- event{item: k, typ: actionStop}
 				}
 			}(v.Name, v.miStop)
@@ -289,7 +289,7 @@ func onReady(c *config) func() {
 		}
 		mStartAll := systray.AddMenuItem("Start All", "Start all")
 		go func() {
-			for _ = range mStartAll.ClickedCh {
+			for range mStartAll.ClickedCh {
 				for _, v := range c.Items {
 					events <- event{item: v.Name, typ: actionStart}
 				}
@@ -297,7 +297,7 @@ func onReady(c *config) func() {
 		}()
 		mStopAll := systray.AddMenuItem("Stop All", "Stop all")
 		go func() {
-			for _ = range mStopAll.ClickedCh {
+			for range mStopAll.ClickedCh {
 				for _, v := range c.Items {
 					events <- event{item: v.Name, typ: actionStop}
 				}
