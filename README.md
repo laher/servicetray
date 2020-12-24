@@ -29,7 +29,7 @@ items:
        args: [status,wg-quick@am]
 ```
 
-### Full example:
+### Other examples
 
 Typically you'd group multiple similar items together.
 
@@ -65,4 +65,41 @@ templates:
 ```
 
 
-##
+### Generators
+
+This example uses docker-compose to dynamically generate a list of services at startup
+
+```
+title: portal
+icon: /usr/share/icons/docker/16x16/docker.png
+pwd: /home/am/my-dockercompose-project
+generators:
+  - name: portal-compose
+    find:
+      cmd: docker-compose
+      args: [ps,--services]
+    template: docker-compose
+templates:
+  - name: docker-compose
+    start:
+      cmd: docker-compose
+      args: [up,-d,"{{.svc}}"]
+    stop:
+      cmd: docker-compose
+      args: [stop,"{{.svc}}"]
+    check:
+      cmd: /home/am/my-dockercompose-project/dcrunning.sh
+      args: ["{{.svc}}"]
+```
+
+Note: docker-compose isn't the easiest for checking status, so this recipe uses a shell script ... dcrunning.sh looks like this:
+
+```
+#!/bin/bash
+
+export id=$(docker-compose ps -q $1)
+if [ "$id" == "" ]; then
+	exit 1;
+fi
+docker ps -q --no-trunc| grep -q $id
+```
