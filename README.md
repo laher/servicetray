@@ -70,11 +70,11 @@ templates:
 This example uses docker-compose to dynamically generate a list of services at startup
 
 ```
-title: portal
+title: dev-project
 icon: /usr/share/icons/docker/16x16/docker.png
 pwd: /home/am/my-dockercompose-project
 generators:
-  - name: portal-compose
+  - name: docker-compose
     find:
       cmd: docker-compose
       args: [ps,--services]
@@ -92,14 +92,5 @@ templates:
       args: ["{{.svc}}"]
 ```
 
-Note: docker-compose isn't the easiest for checking status, so this recipe uses a shell script ... dcrunning.sh looks like this:
+Note: docker-compose isn't the easiest for checking status, so this recipe uses a shell script. I included a bash script to give an idea of what to do ... [./helpers/dcrunning.sh](./helpers/dcrunning.sh)
 
-```
-#!/bin/bash
-
-export id=$(docker-compose ps -q $1)
-if [ "$id" == "" ]; then
-	exit 1;
-fi
-docker ps -q --no-trunc| grep -q $id
-```
