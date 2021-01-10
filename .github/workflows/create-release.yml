@@ -6,6 +6,11 @@ on:
 
 name: Create Release
 
+
+env:
+  MAINTAINER: 'laher'
+  DESC: 'servicetray is a configurable system tray widget for a group of related services.'
+
 jobs:
   deploy:
     strategy:
@@ -41,24 +46,26 @@ jobs:
       #   run: |
       #     mkdir -p release
       #     tar -C ./target/release/ -czvf ./release/servicetray-win.tar.gz ./servicetray.exe
-      - uses: jiro4989/build-deb-action@v2
-        if: matrix.os == 'ubuntu-latest'
-        with:
-          package: servicetray
-          package_root: .debpkg
-          maintainer: am
-          version: ${{ github.ref }} # refs/tags/v*.*.*
-          arch: 'amd64'
-          desc: 'servicetray is a configurable system tray widget for a group of related services.'
       - uses: jiro4989/build-rpm-action@v2
         if: matrix.os == 'ubuntu-latest'
         with:
+          summary: '${{ env.DESC }}'
           package: servicetray
           package_root: .rpmpkg
           maintainer: am
           version: ${{ github.ref }} # refs/tags/v*.*.*
           arch: 'x86_64'
-          desc: 'servicetray is a configurable system tray widget for a group of related services.'
+          desc: '${{ env.DESC }}'
+      - uses: jiro4989/build-deb-action@v2
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          summary: '${{ env.DESC }}'
+          package: servicetray
+          package_root: .debpkg
+          maintainer: am
+          version: ${{ github.ref }} # refs/tags/v*.*.*
+          arch: 'amd64'
+          desc: '${{ env.DESC }}'
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
@@ -70,6 +77,7 @@ jobs:
             ./release/*.zip
             ./*.deb
             ./*.rpm
+            !./*-debuginfo-*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
