@@ -26,8 +26,10 @@ jobs:
           go build .
           mkdir -p release
           tar -cvzf ./release/servicetray-linux-amd64.tar.gz ./servicetray
-          mkdir -p .debpkg/usr/bin
-          cp ./servicetray .debpkg/usr/bin/servicetray
+          mkdir -p .debpkg/usr/loca/bin
+          mkdir -p .rpmpkg/usr/loca/bin
+          cp ./servicetray .debpkg/usr/local/bin/servicetray
+          cp ./servicetray .rpmpkg/usr/local/bin/servicetray
           #echo -e "a=1" > .debpkg/usr/lib/samplescript/samplescript.conf
       # - name: Build Release Mac
       #   if: matrix.os == 'macos-latest'
@@ -44,6 +46,15 @@ jobs:
         with:
           package: servicetray
           package_root: .debpkg
+          maintainer: am
+          version: ${{ github.ref }} # refs/tags/v*.*.*
+          arch: 'amd64'
+          desc: 'servicetray is a configurable system tray widget for a group of related services.'
+      - uses: jiro4989/build-rpm-action@v2
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          package: servicetray
+          package_root: .rpmpkg
           maintainer: am
           version: ${{ github.ref }} # refs/tags/v*.*.*
           arch: 'amd64'
