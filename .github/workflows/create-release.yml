@@ -25,7 +25,10 @@ jobs:
           DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -q gcc libgtk-3-dev libappindicator3-dev 
           go build .
           mkdir -p release
-          tar -cvzf ./release/servicetray-linux.tar.gz ./servicetray
+          tar -cvzf ./release/servicetray-linux-amd64.tar.gz ./servicetray
+          mkdir -p .debpkg/usr/bin
+          cp ./servicetray .debpkg/usr/bin/servicetray
+          #echo -e "a=1" > .debpkg/usr/lib/samplescript/samplescript.conf
       # - name: Build Release Mac
       #   if: matrix.os == 'macos-latest'
       #   run: |
@@ -36,6 +39,15 @@ jobs:
       #   run: |
       #     mkdir -p release
       #     tar -C ./target/release/ -czvf ./release/servicetray-win.tar.gz ./servicetray.exe
+      - uses: jiro4989/build-deb-action@v2
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          package: servicetray
+          package_root: .debpkg
+          maintainer: am
+          version: ${{ github.ref }} # refs/tags/v*.*.*
+          arch: 'amd64'
+          desc: 'servicetray is a configurable system tray widget for a group of related services.'
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
