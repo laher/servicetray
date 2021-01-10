@@ -26,8 +26,8 @@ jobs:
           go build .
           mkdir -p release
           tar -cvzf ./release/servicetray-linux-amd64.tar.gz ./servicetray
-          mkdir -p .debpkg/usr/loca/bin
-          mkdir -p .rpmpkg/usr/loca/bin
+          mkdir -p .debpkg/usr/local/bin
+          mkdir -p .rpmpkg/usr/local/bin
           cp ./servicetray .debpkg/usr/local/bin/servicetray
           cp ./servicetray .rpmpkg/usr/local/bin/servicetray
           #echo -e "a=1" > .debpkg/usr/lib/samplescript/samplescript.conf
