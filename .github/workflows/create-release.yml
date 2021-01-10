@@ -57,7 +57,7 @@ jobs:
           package_root: .rpmpkg
           maintainer: am
           version: ${{ github.ref }} # refs/tags/v*.*.*
-          arch: 'amd64'
+          arch: 'x86_64'
           desc: 'servicetray is a configurable system tray widget for a group of related services.'
       - name: Release
         uses: softprops/action-gh-release@v1
