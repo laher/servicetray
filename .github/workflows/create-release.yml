@@ -59,7 +59,6 @@ jobs:
       - uses: laher/build-deb-action@master
         if: matrix.os == 'ubuntu-latest'
         with:
-          summary: '${{ env.DESC }}'
           package: servicetray
           package_root: .debpkg
           maintainer: am
