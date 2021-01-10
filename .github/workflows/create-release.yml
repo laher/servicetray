@@ -57,7 +57,8 @@ jobs:
           files: |
             ./release/*.tar.gz
             ./release/*.zip
-            ./release/*.deb
+            ./*.deb
+            ./*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
