@@ -64,7 +64,7 @@ jobs:
           maintainer: am
           version: ${{ github.ref }} # refs/tags/v*.*.*
           arch: 'amd64'
-          depends: libappindicator3, gcc, libgtk-3-dev, libappindicator3-dev
+          depends: ''
           desc: '${{ env.DESC }}'
       - name: Release
         uses: softprops/action-gh-release@v1
