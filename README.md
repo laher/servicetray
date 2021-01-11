@@ -8,9 +8,11 @@ Configurable system tray widget for a group of related services
 
  * Linux (amd64): binaries and deb/rpm packages released for Linux amd64.
 
-servicetray is a go app with a C dependency, using [https://github.com/getlantern/systray](systray) - see that repo for installation requirements.
+`servicetray` is a go app with a C dependency, using [https://github.com/getlantern/systray](systray).
 
-_Please send a PR if you manage to install servicetray on another platform. Documentation would be good, github action would be even better._
+In order to install on other platforms, see that repo for installation requirements. NOTE that I haven't tested any other platforms yet.
+
+_Please send a documentation PR if you manage to install servicetray on another platform. Documentation would be great, github action would be even better._
 
 ## Usage
 
@@ -100,15 +102,15 @@ Note: docker-compose isn't the easiest for checking status, so this recipe uses 
 
 ### Starting servicetray at startup
 
-For Ubuntu Linux, I did the following:
+For Ubuntu Linux:
 
  * Presss the `<Super>` key and launch `Startup Applications`
- * My looked like this: `servicetray -config /home/am/.config/servicetray/vpns.yml`
- * Note that the PATH variable is going to be minimal. Either move your servicetray binary to `/usr/local/bin`, or specify the full path.
+ * The 'command' looks like this: `servicetray -config /home/am/.config/servicetray/vpns.yml`
+ * Note - if you installed from source, be aware that the PATH variable used here might not include your `$GOPATH/bin`. Either move your servicetray binary somewhere like `/usr/local/bin`, or specify the full path.
 
 # TODO
 
- * Set up goreleaser for other platforms.
+ * Set up github actions for other platforms.
  * Maybe include some icons.
  * Maybe add some more utilities:
    * add 'recipes'
