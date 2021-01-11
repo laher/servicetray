@@ -56,7 +56,7 @@ jobs:
           version: ${{ github.ref }} # refs/tags/v*.*.*
           arch: 'x86_64'
           desc: '${{ env.DESC }}'
-      - uses: laher/build-deb-action@master
+      - uses: jiro4989/build-deb-action@v2
         if: matrix.os == 'ubuntu-latest'
         with:
           package: servicetray
@@ -64,7 +64,6 @@ jobs:
           maintainer: am
           version: ${{ github.ref }} # refs/tags/v*.*.*
           arch: 'amd64'
-          depends: ''
           desc: '${{ env.DESC }}'
       - name: Release
         uses: softprops/action-gh-release@v1
