@@ -6,19 +6,11 @@ Configurable system tray widget for a group of related services
 
 ## Installation
 
-servicetray is a go app. It's built with [https://github.com/getlantern/systray](systray) - see that repo for installation requirements.
+ * Linux (amd64): binaries and deb/rpm packages released for Linux amd64.
 
-In due course I'll add `goreleaser` or similar, to make it easy to install this.
+servicetray is a go app with a C dependency, using [https://github.com/getlantern/systray](systray) - see that repo for installation requirements.
 
-Please send a documentation PR if you manage to install servicetray on another platform.
-
-### Ubuntu
-
-I use Ubuntu Linux, so I did the following (from the above repo)
-
-```bash
-sudo apt-get install gcc libgtk-3-dev libappindicator3-dev
-```
+_Please send a PR if you manage to install servicetray on another platform. Documentation would be good, github action would be even better._
 
 ## Usage
 
@@ -116,9 +108,12 @@ For Ubuntu Linux, I did the following:
 
 # TODO
 
- * Set up goreleaser to release binaries, debs etc.
+ * Set up goreleaser for other platforms.
  * Maybe include some icons.
  * Maybe add some more utilities:
    * add 'recipes'
    * cross-platform utilites (like, a cross-platform `dcrunning` binary)
  * Maybe add support for 'info/stats' for each item
+ * Generators:
+   * Regularly re-loading generator results.
+   * _maybe_, pinning/hiding of some generated items.
